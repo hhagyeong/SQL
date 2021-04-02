@@ -70,3 +70,56 @@ SELECT *
  WHERE DepartmentName = 'Trend'
    AND RATING<=3
    AND AGE BETWEEN 50 AND 59;
+   
+# 2. 평점이 낮은 상품의 주요 Complain
+
+#  1) DepartmentName, ClothingID별 평균 평점 계산
+SELECT DepartmentName, ClothingID,
+	   AVG(RATING) AVG_RATE
+  FROM MYDATA.DATASET2
+ GROUP BY 1, 2;
+ 
+#  2) Department별 순위 생성
+SELECT *,
+	   ROW_NUMBER() OVER(PARTITION BY DepartmentName ORDER BY AVG_RATE) RNK
+  FROM (SELECT DepartmentName, ClothingID,
+			   AVG(RATING) AVG_RATE
+		  FROM MYDATA.DATASET2
+		 GROUP BY 1, 2) A;
+         
+#  3) 1~10위 데이터 조회
+SELECT *
+  FROM (SELECT *,
+			   ROW_NUMBER() OVER( PARTITION BY DepartmentName ORDER BY AVG_RATE) RNK
+		  FROM (SELECT DepartmentName, ClothingID,
+					   AVG(RATING) AVG_RATE
+				  FROM MYDATA.DATASET2
+				 GROUP BY 1, 2) A
+		) A
+ WHERE RNK<=10;
+ 
+#   A) DepartmentName별 평균 평점이 낮은 10개 상품
+# 데이터 조회 결과 MYDATA.STAT테이블로 생성
+CREATE TEMPORARY TABLE MYDATA.STAT AS
+SELECT *
+  FROM (SELECT *,
+			   ROW_NUMBER() OVER (PARTITION BY DepartmentName ORDER BY AVG_RATE) RNK
+		  FROM (SELECT DepartmentName, ClothingID,
+					   AVG(RATING) AVG_RATE
+				  FROM MYDATA.DATASET2
+				 GROUP BY 1, 2) A
+		) A
+ WHERE RNK<=10;
+ 
+# Bottoms의 평점이 낮은 10개 상품의 ClothingID 조회
+SELECT ClothingID
+  FROM MYDATA.STAT
+ WHERE DepartmentName = 'Bottoms';
+ 
+# Bottoms의 평점이 낮은 10개 상품의 리뷰 조회
+SELECT *
+  FROM MYDATA.DATASET2
+ WHERE ClothingID IN (SELECT ClothingID
+					    FROM MYDATA.DATASET2
+					   WHERE DepartmentName = 'Bottoms')
+ ORDER BY ClothingID;

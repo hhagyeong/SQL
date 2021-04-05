@@ -123,3 +123,36 @@ SELECT *
 					    FROM MYDATA.DATASET2
 					   WHERE DepartmentName = 'Bottoms')
  ORDER BY ClothingID;
+ 
+# 3. 연령별 Worst Department
+
+# 연령, DepartmentName별 가장 낮은 점수 계산
+# 단, 연령은 10세 단위로 함
+SELECT DepartmentName,
+	   FLOOR(AGE/10) * 10 AGEBAND,
+	   AVG(RATING) AVG_RATING
+  FROM MYDATA.DATASET2
+ GROUP BY 1, 2;
+ 
+# 생성한 점수를 기반으로 Rank 생성
+# 가장 낮은 점수가 1위가 되도록 오름차순 정렬
+SELECT *,
+	   ROW_NUMBER() OVER(PARTITION BY AGEBAND ORDER BY AVG_RATING) RNK
+  FROM (SELECT DepartmentName,
+			   FLOOR(AGE/10)*10 AGEBAND,
+               AVG(RATING) AVG_RATING
+		  FROM MYDATA.DATASET2
+		 GROUP BY 1, 2) A;
+
+# Rank 값이 1인 데이터를 조회 = 연령별로 가장 낮은 평점을 준 DepartmentName 조회
+SELECT *
+  FROM (SELECT *,
+			   ROW_NUMBER() OVER(PARTITION BY AGEBAND ORDER BY AVG_RATING) RNK
+		  FROM (SELECT DepartmentName,
+					   FLOOR(AGE/10)*10 AGEBAND,
+                       AVG(RATING) AVG_RATING
+				  FROM MYDATA.DATASET2
+				 GROUP BY 1, 2) A
+		) A
+ WHERE RNK<=1;
+ 

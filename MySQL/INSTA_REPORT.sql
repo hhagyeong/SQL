@@ -148,3 +148,108 @@ SELECT *
 				 GROUP BY 1, 2) A
 		) A
  WHERE RNK BETWEEN 1 AND 10;
+ 
+ # 2. 구매자 분석
+
+#  1) 10분위 분석
+# 10분위 분석: 전체를 10분위로 나누어 각 분위 수에 해당하는 집단의 성질을 나타내는 방법
+
+# 고객들의 주문 건수를 기준으로 분위 수 나누기
+SELECT *,
+	   ROW_NUMBER() OVER(ORDER BY F DESC) RNK
+  FROM (SELECT USER_ID,
+			   COUNT(DISTINCT ORDER_ID) F
+		  FROM INSTACART.ORDERS
+		 GROUP BY 1) A;
+
+# 전체 고객 수 계산하기
+SELECT COUNT(DISTINCT USER_ID)
+  FROM (SELECT USER_ID,
+			   COUNT(DISTINCT ORDER_ID) F
+		  FROM INSTACART.ORDERS
+		 GROUP BY 1) A;
+# 전체 고객 수는 3,159명임을 참고하여 등수별 분위 수 계산
+
+# CASE WHEN 구문을 이용해 각 등수에 따른 분위 수 설정 (방법1)
+SELECT *,
+	   CASE WHEN RNK BETWEEN 1 AND 316 THEN 'Quantile_1'
+       WHEN RNK BETWEEN 317 AND 632 THEN 'Quantile_2'
+       WHEN RNK BETWEEN 633 AND 948 THEN 'Quantile_3'
+       WHEN RNK BETWEEN 949 AND 1264 THEN 'Quantile_4'
+       WHEN RNK BETWEEN 1265 AND 1580 THEN 'Quantile_5'
+       WHEN RNK BETWEEN 1581 AND 1895 THEN 'Quantile_6'
+       WHEN RNK BETWEEN 1896 AND 2211 THEN 'Quantile_7'
+       WHEN RNK BETWEEN 2212 AND 2527 THEN 'Quantile_8'
+       WHEN RNK BETWEEN 2528 AND 2843 THEN 'Quantile_9'
+       WHEN RNK BETWEEN 2844 AND 3159 THEN 'Quantile_10' END quantile
+  FROM (SELECT *,
+			   ROW_NUMBER() OVER(ORDER BY F DESC) RNK
+		  FROM (SELECT USER_ID,
+					   COUNT(DISTINCT ORDER_ID) F
+				  FROM INSTACART.ORDERS
+				 GROUP BY 1) A
+		) A;
+		
+# (방법2)
+SELECT *,
+	   CASE WHEN RNK <=316 THEN 'Quantile_1'
+       WHEN RNK <=632 THEN 'Quantile_2'
+       WHEN RNK <=948 THEN 'Quantile_3'
+       WHEN RNK <=1264 THEN 'Quantile_4'
+       WHEN RNK <=1580 THEN 'Quantile_5'
+       WHEN RNK <=1895 THEN 'Quantile_6'
+       WHEN RNK <=2211 THEN 'Quantile_7'
+       WHEN RNK <=2527 THEN 'Quantile_8'
+       WHEN RNK <=2843 THEN 'Quantile_9'
+       WHEN RNK <=3159 THEN 'Quantile_10' END quantile
+  FROM (SELECT *,
+			   ROW_NUMBER() OVER(ORDER BY F DESC) RNK
+		  FROM (SELECT USER_ID,
+					   COUNT(DISTINCT ORDER_ID) F
+				  FROM INSTACART.ORDERS
+				 GROUP BY 1) A
+		) A;
+        
+# 위의 조회 결과를 하나의 테이블로 생성
+CREATE TEMPORARY TABLE INSTACART.USER_QUANTILE AS
+SELECT *,
+	   CASE WHEN RNK <=316 THEN 'Quantile_1'
+       WHEN RNK <=632 THEN 'Quantile_2'
+       WHEN RNK <=948 THEN 'Quantile_3'
+       WHEN RNK <=1264 THEN 'Quantile_4'
+       WHEN RNK <=1580 THEN 'Quantile_5'
+       WHEN RNK <=1895 THEN 'Quantile_6'
+       WHEN RNK <=2211 THEN 'Quantile_7'
+       WHEN RNK <=2527 THEN 'Quantile_8'
+       WHEN RNK <=2843 THEN 'Quantile_9'
+       WHEN RNK <=3159 THEN 'Quantile_10' END quantile
+  FROM (SELECT *,
+			   ROW_NUMBER() OVER(ORDER BY F DESC) RNK
+		  FROM (SELECT USER_ID,
+					   COUNT(DISTINCT ORDER_ID) F
+				  FROM INSTACART.ORDERS
+				 GROUP BY 1) A
+		) A;
+  
+# 테이블 생성 확인
+SELECT *
+  FROM INSTACART.USER_QUANTILE;
+  
+# 분위 수별 전체 주문 건수의 합
+SELECT QUANTILE,
+	   SUM(F) F
+  FROM INSTACART.USER_QUANTILE
+ GROUP BY 1;
+       
+# 전체 주문 건수 계산
+SELECT SUM(F)
+  FROM INSTACART.USER_QUANTILE;
+
+# 각 분위 수의 주문 건수를 전체 주문 건수로 나누기
+SELECT QUANTILE,
+	   SUM(F)/3220 F
+  FROM INSTACART.USER_QUANTILE
+ GROUP BY 1;
+# 각 분위 수별로 주문 건수가 거의 균등하게 분포되어 있음
+# 즉 해당 서비스는 매출이 VIP에게 집중되지 않고, 전체 고객에 고르게 분호되어 있음을 알 수 있음
+

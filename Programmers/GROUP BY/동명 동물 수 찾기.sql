@@ -1,0 +1,8 @@
+SELECT A.*
+  FROM (SELECT NAME,
+               COUNT(NAME) AS COUNT
+          FROM ANIMAL_INS
+         WHERE NAME IS NOT NULL
+         GROUP BY NAME
+         ORDER BY NAME ASC)AS A
+ WHERE A.COUNT >=2;

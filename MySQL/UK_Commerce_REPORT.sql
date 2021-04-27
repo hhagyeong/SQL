@@ -142,3 +142,47 @@ SELECT SUBSTR(MNDT, 1, 7) MM,
     ON A.CUSTOMERID = B.CUSTOMERID
  GROUP BY 1, 2;
  
+ # 5.고객 세그먼트
+#  1)RFM
+#    A)RFM: 구매 가능성이 높은 고객을 선정하기 위한 데이터 분석 방법으로서, 분석 과정을 통해 데이터는 의미 있는 정보로 전환된다
+/* Recency - 제일 최근에 구입한 시기가 언제인가?
+   Frequency - 어느 정도로 자주 구입했나?
+   Monetary - 구입한 총 금액은 얼마인가? */
+   
+# 고객의 마지막 구매일 구하기
+SELECT CUSTOMERID,
+       MAX(INVOICEDATE) MXDT
+  FROM MYDATA.DATASET3_2
+ GROUP BY 1;
+
+# '2011-12-02'로부터의 TIMER INTERVAL 계산하기
+SELECT *
+  FROM (SELECT CUSTOMERID,
+               DATEDIFF('2011-12-02', MXDT) RECENCY
+	  FROM (SELECT CUSTOMERID,
+		       MAX(INVOICEDATE) MXDT
+		  FROM MYDATA.DATASET3_2
+		 GROUP BY 1) A
+		) A
+ WHERE RECENCY IS NOT NULL ;
+ 
+# FREQUENCY(구매 건수)와 MONETARY(구매 금액) 계산하기
+SELECT CUSTOMERID,
+       COUNT(DISTINCT INVOICENO) FREQUENCY,
+       ROUND(SUM(QUANTITY*UNITPRICE), 2) MONETARY
+  FROM MYDATA.DATASET3
+ GROUP BY 1;
+
+# 위에서 구한 RECENCY, FREQUENCY, MONETARY를 하나의 쿼리로 구하기
+SELECT CUSTOMERID,
+       DATEDIFF('2011-12-02', MXDT) RECENCY,
+       FREQUENCY,
+       MONETARY
+  FROM (SELECT CUSTOMERID,
+               MAX(INVOICEDATE) MXDT,
+               COUNT(DISTINCT INVOICENO) FREQUENCY,
+               SUM(QUANTITY*UNITPRICE) MONETARY
+	  FROM MYDATA.DATASET3
+	 GROUP BY 1) A;
+
+#    B)K Means Algorithm: 비슷한 특성을 가진 데이터를 그룹핑하는 Clustering 기법 중 하나

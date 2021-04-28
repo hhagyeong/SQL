@@ -186,3 +186,35 @@ SELECT CUSTOMERID,
 	 GROUP BY 1) A;
 
 #    B)K Means Algorithm: 비슷한 특성을 가진 데이터를 그룹핑하는 Clustering 기법 중 하나
+
+#  2)재구매 Segment
+# 고객별, 상품별 구매 연도를 Unique하게 카운트
+SELECT CUSTOMERID,
+       STOCKCODE,
+       COUNT(DISTINCT SUBSTR(INVOICEDATE, 1, 4)) UNIQUE_YY
+  FROM MYDATA.DATASET3
+ GROUP BY 1, 2;
+ 
+# UNIQUE_YY가 2이상인 고객과 그렇지 않은 고객을 구분하면, Segment구할 수 있음
+# 고객별로 UNIQUE_YY의 최대값을 계산헀을 때, 그 값이 2이상인 고객은 특정 상품을 2개 연도에 걸쳐 구매한 것으로 볼 수 있음
+SELECT CUSTOMERID,
+       MAX(UNIQUE_YY) MX_UNIQUE_YY
+  FROM (SELECT CUSTOMERID,
+               STOCKCODE,
+               COUNT(DISTINCT SUBSTR(INVOICEDATE, 1, 4)) UNIQUE_YY
+	  FROM MYDATA.DATASET3
+	 GROUP BY 1, 2) A
+ GROUP BY 1;
+ 
+# MX_UNIQUE_YY가 2이상인 경우는 1, 그렇지 않은 경우는 0으로 설정해 REPURCHASE_SEGMENT생성
+SELECT CUSTOMERID,
+       CASE WHEN MX_UNIQUE_YY >= 2 THEN 1 ELSE 0 END REPURCHASE_SEGMENT
+  FROM (SELECT CUSTOMERID,
+               MAX(UNIQUE_YY) MX_UNIQUE_YY
+	  FROM (SELECT CUSTOMERID,
+                       STOCKCODE,
+                       COUNT(DISTINCT SUBSTR(INVOICEDATE, 1, 4)) UNIQUE_YY
+		  FROM MYDATA.DATASET3
+		 GROUP BY 1, 2) A
+	GROUP BY 1) A
+ GROUP BY 1;

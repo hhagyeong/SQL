@@ -81,3 +81,36 @@ SELECT A.AGEBAND,
  ORDER BY A.AGEBAND;
 # 전반적으로 여성의 경우 모든 연령대에서 60% 이상의 생존율을 보임
 # 반대로 남성의 경우 10,20대의 생존율이 50,60대와 비슷하게 나타남
+
+#  3) Pclass(객실 등급)
+SELECT PCLASS,
+       COUNT(PASSENGERID) N_PASSENGERS,
+       SUM(SURVIVED) N_SURVIVED,
+       SUM(SURVIVED)/COUNT(PASSENGERID) SURVIVED_RATE
+  FROM MYDATA.DATASET4
+ GROUP BY PCLASS
+ ORDER BY 1;
+# 생존율은 1등급, 2등급, 3등급 순으로 높게 나타남
+
+# 객실 등급과 연령, 성별을 조합해 생존율 알아보기
+SELECT PCLASS,
+       SEX,
+       COUNT(PASSENGERID) N_PASSENGERS,
+       SUM(SURVIVED) N_SURVIVED,
+       SUM(SURVIVED)/COUNT(PASSENGERID) SURVIVED_RATE
+  FROM MYDATA.DATASET4
+ GROUP BY PCLASS, SEX
+ ORDER BY 2, 1;
+# 여성의 생존율이 높게 나타남
+# 3등석 여성의 생존율이 1등석 남성의 생존율보다 높은 것은 실제로 객실 등급보다 연령, 성별이 구조에서 우선 고려된 것으로 보임
+
+SELECT PCLASS,
+       SEX,
+       FLOOR(AGE/10)*10 AGEBAND,
+       COUNT(PASSENGERID) N_PASSENGERS,
+       SUM(SURVIVED) N_SURVIVED,
+       SUM(SURVIVED)/COUNT(PASSENGERID) SURVIVED_RATE
+  FROM MYDATA.DATASET4
+ GROUP BY PCLASS, SEX, FLOOR(AGE/10)*10
+ ORDER BY 2, 1;
+# 유아일수록 생존율이 높고, 모든 객실 등급에서 여성의 생존율이 더 높게 나타남
